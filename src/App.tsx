@@ -128,10 +128,16 @@ function App() {
         </nav>
 
         <main className="main-content">
-          <header>
-            <h1>Directorio</h1>
-            <p>Gestion del personal.</p>
-          </header>
+          <div className="header-compact">
+            <div className="header-compact-left">
+              <h1>Directorio Compacto</h1>
+              <p>Gestiona tus conexiones con un diseño eficiente y profesional.</p>
+            </div>
+            <div className="header-compact-right">
+              <span className="contact-count">{filteredUsers.length} Contactos</span>
+              <span className="active-badge">Ventas Activo</span>
+            </div>
+          </div>
 
           <div className="search-container">
             <svg className="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -150,67 +156,67 @@ function App() {
               <div className="loader-text">Cargando...</div>
             </div>
           ) : (
-            <div className="user-grid">
+            <div className="user-list">
               {filteredUsers.length === 0 ? (
                 <div className="no-results">No se encontraron profesionales para "{searchTerm}"</div>
               ) : (
                 filteredUsers.map((user) => {
-                  const tags = [];
-                  if (user.company) tags.push(user.company.substring(0, 15));
-                  if (user.city) tags.push(user.city);
-
                   const statusColors = ['status-green', 'status-grey', 'status-orange'];
                   const statusClass = statusColors[user.full_name.length % 3];
 
                   return (
-                    <div key={user.id} className="user-card" onClick={() => setSelectedUser(user)}>
-                      <div className="avatar-container">
-                        <div className="avatar-ring">
-                          <img
-                            src={user.avatar}
-                            alt={`Foto de ${user.full_name}`}
-                            className="avatar"
-                            onError={(e) => {
-                              e.currentTarget.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(user.full_name) + "&background=random";
-                            }}
-                          />
+                    <div key={user.id} className="user-card-horizontal" onClick={() => setSelectedUser(user)}>
+                      <div className={`status-dot-top-right ${statusClass}`}></div>
+                      
+                      <div className="card-left">
+                        <img
+                          src={user.avatar}
+                          alt={`Foto de ${user.full_name}`}
+                          className="avatar-compact"
+                          onError={(e) => {
+                            e.currentTarget.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(user.full_name) + "&background=random";
+                          }}
+                        />
+                        <div className="user-info-compact">
+                          <div className="name-row">
+                            <h2>{user.full_name}</h2>
+                          </div>
+                          <span className="job-compact">{user.job || 'Profesional'}</span>
+                          <span className="company-compact">{user.company || 'Empresa'}</span>
                         </div>
-                        <div className={`status-dot ${statusClass}`}></div>
                       </div>
 
-                      <div className="user-info">
-                        <h2>{user.full_name}</h2>
-                        <span className="job">{user.job || 'Profesional'}</span>
-                      </div>
-
-                      <div className="tags">
-                        {tags.map((tag, i) => (
-                          <span key={i} className="tag">{tag}</span>
-                        ))}
-                      </div>
-
-                      <hr className="divider" />
-
-                      <div className="actions">
-                        <a href={`mailto:${user.email}`} className="action-icon" title="Email">
-                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                          </svg>
-                        </a>
-                        <a href={`tel:${user.phone}`} className="action-icon" title="Teléfono">
-                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                          </svg>
-                        </a>
-                        <a href={user.url || '#'} target="_blank" rel="noreferrer" className="action-icon" title="Mensaje">
-                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                          </svg>
-                        </a>
+                      <div className="card-right">
+                        <div className="actions-compact">
+                          <a href={`mailto:${user.email}`} className="action-icon" title="Email" onClick={(e) => e.stopPropagation()}>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                          </a>
+                          <a href={`tel:${user.phone}`} className="action-icon" title="Teléfono" onClick={(e) => e.stopPropagation()}>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                            </svg>
+                          </a>
+                          <a href={user.url || '#'} target="_blank" rel="noreferrer" className="action-icon" title="Mensaje" onClick={(e) => e.stopPropagation()}>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                            </svg>
+                          </a>
+                        </div>
+                        <svg className="chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
                       </div>
                     </div>
                   );
                 })
+              )}
+              {filteredUsers.length > 0 && (
+                <button className="add-contact-btn">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                  Agregar nuevo contacto
+                </button>
               )}
             </div>
           )}
