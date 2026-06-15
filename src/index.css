@@ -234,22 +234,69 @@ header h1 {
   border-color: var(--accent);
 }
 
-@media (max-width: 640px) {
+/* Responsive Design / Media Queries */
+
+/* Pantallas grandes y tablets horizontales */
+@media (max-width: 1024px) {
+  .app-container {
+    padding: 3rem 2rem;
+  }
+  header h1 {
+    font-size: 2.5rem;
+  }
+}
+
+/* Tablets verticales */
+@media (max-width: 768px) {
   .app-container {
     padding: 2rem 1.5rem;
   }
+  header {
+    margin-bottom: 2.5rem;
+  }
+  header h1 {
+    font-size: 2.25rem;
+  }
+  .search-container {
+    max-width: 90%;
+  }
+}
+
+/* Teléfonos móviles */
+@media (max-width: 640px) {
+  .app-container {
+    padding: 1.5rem 1rem;
+  }
+  
+  header {
+    margin-bottom: 2rem;
+  }
   
   header h1 {
-    font-size: 2.2rem;
+    font-size: 1.8rem;
+  }
+
+  .search-input {
+    padding: 0.8rem 1.2rem;
+    font-size: 0.95rem;
+  }
+
+  .user-grid {
+    gap: 1rem;
   }
 
   .card-header {
     flex-direction: column;
     text-align: center;
+    gap: 0.75rem;
   }
   
   .card-body p {
     align-items: center;
     text-align: center;
+  }
+
+  .btn-website {
+    padding: 0.75rem;
   }
 }
