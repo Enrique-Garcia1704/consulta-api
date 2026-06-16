@@ -13,4 +13,6 @@ export interface User {
   latitude?: number;
   longitude?: number;
   gender?: string;
+  dob?: string;
+  cell?: string;
 }

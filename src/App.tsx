@@ -6,7 +6,7 @@ const translations = {
   es: {
     title: "Directorio Compacto",
     subtitle: "Gestiona tus conexiones con un diseño eficiente y profesional.",
-    searchPlaceholder: "Buscar contactos...",
+    searchPlaceholder: "Buscar por nombre, correo, teléfono, empresa...",
     allGenders: "Todos los géneros",
     allCountries: "Todos los países",
     allJobs: "Todos los puestos",
@@ -18,6 +18,8 @@ const translations = {
     company: "Empresa",
     location: "Ubicación",
     gender: "Género",
+    dob: "Nacimiento",
+    cell: "Celular",
     map: "Mapa",
     notSpecified: "No especificado",
     professional: "Profesional",
@@ -26,36 +28,11 @@ const translations = {
       female: "Femenino",
       nonbinary: "No binario",
     } as Record<string, string>
-  },
-  en: {
-    title: "Compact Directory",
-    subtitle: "Manage your connections with an efficient and professional design.",
-    searchPlaceholder: "Search contacts...",
-    allGenders: "All genders",
-    allCountries: "All countries",
-    allJobs: "All jobs",
-    loading: "Loading...",
-    noResults: 'No professionals found for',
-    phone: "Phone",
-    job: "Job Title",
-    email: "Email",
-    company: "Company",
-    location: "Location",
-    gender: "Gender",
-    map: "Map",
-    notSpecified: "Not specified",
-    professional: "Professional",
-    genders: {
-      male: "Male",
-      female: "Female",
-      nonbinary: "Nonbinary"
-    } as Record<string, string>
   }
 };
 
 function App() {
-  const [language, setLanguage] = useState<'es' | 'en'>('es');
-  const t = translations[language];
+  const t = translations.es;
 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,7 +84,7 @@ function App() {
 
   const filteredUsers = users.filter((user) => {
     const term = searchTerm.toLowerCase();
-    
+
     const matchGender = selectedGender === '' || user.gender === selectedGender;
     const matchCountry = selectedCountry === '' || user.country === selectedCountry;
     const matchJob = selectedJob === '' || user.job === selectedJob;
@@ -120,7 +97,9 @@ function App() {
       user.city?.toLowerCase().includes(term) ||
       user.country?.toLowerCase().includes(term) ||
       user.company?.toLowerCase().includes(term) ||
-      user.job?.toLowerCase().includes(term)
+      user.job?.toLowerCase().includes(term) ||
+      user.dob?.toLowerCase().includes(term) ||
+      user.cell?.toLowerCase().includes(term)
     );
 
     return matchGender && matchCountry && matchJob && matchSearch;
@@ -129,7 +108,7 @@ function App() {
     if (!phone) return '';
     // Quitamos la extensión si la hay
     const mainPhone = phone.split(/x/i)[0].trim();
-    
+
     // Extraemos solo los números
     const digits = mainPhone.replace(/\D/g, '');
 
@@ -137,7 +116,7 @@ function App() {
     if (digits.length === 10) {
       return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
     }
-    
+
     // Formato +1 (XXX) XXX-XXXX para 11 dígitos que empiecen en 1
     if (digits.length === 11 && digits.startsWith('1')) {
       return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
@@ -185,9 +164,9 @@ function App() {
                   className="search-input"
                 />
               </div>
-              
+
               <div className="filters-wrapper">
-                <select 
+                <select
                   className="filter-select"
                   value={selectedGender}
                   onChange={(e) => setSelectedGender(e.target.value)}
@@ -198,7 +177,7 @@ function App() {
                   ))}
                 </select>
 
-                <select 
+                <select
                   className="filter-select"
                   value={selectedCountry}
                   onChange={(e) => setSelectedCountry(e.target.value)}
@@ -209,7 +188,7 @@ function App() {
                   ))}
                 </select>
 
-                <select 
+                <select
                   className="filter-select"
                   value={selectedJob}
                   onChange={(e) => setSelectedJob(e.target.value)}
@@ -336,6 +315,18 @@ function App() {
                   </div>
                 </div>
 
+                {/* Celular */}
+                <div className="modal-detail-item">
+                  <div className="modal-icon-bg">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                  </div>
+                  <div className="modal-detail-text">
+                    <span className="detail-label">{t.cell}</span>
+                    <span className="detail-value">{formatPhone(selectedUser.cell || '')}</span>
+                  </div>
+                </div>
+
+
                 {/* Cargo */}
                 <div className="modal-detail-item">
                   <div className="modal-icon-bg">
@@ -387,7 +378,19 @@ function App() {
                   </div>
                   <div className="modal-detail-text">
                     <span className="detail-label">{t.gender}</span>
-                    <span className="detail-value" style={{textTransform: 'capitalize'}}>{formatGender(selectedUser.gender)}</span>
+                    <span className="detail-value" style={{ textTransform: 'capitalize' }}>{formatGender(selectedUser.gender)}</span>
+                  </div>
+                </div>
+
+
+                {/* Fecha de Nacimiento */}
+                <div className="modal-detail-item">
+                  <div className="modal-icon-bg">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                  </div>
+                  <div className="modal-detail-text">
+                    <span className="detail-label">{t.dob}</span>
+                    <span className="detail-value">{selectedUser.dob || t.notSpecified}</span>
                   </div>
                 </div>
               </div>
