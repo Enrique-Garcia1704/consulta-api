@@ -1,14 +1,69 @@
 import { useState, useEffect } from 'react';
 import './index.css';
 import type { User } from './types';
-// Ya no necesitamos el JSON local, usaremos la API real
+
+const translations = {
+  es: {
+    title: "Directorio Compacto",
+    subtitle: "Gestiona tus conexiones con un diseño eficiente y profesional.",
+    searchPlaceholder: "Buscar contactos...",
+    allGenders: "Todos los géneros",
+    allCountries: "Todos los países",
+    allJobs: "Todos los puestos",
+    loading: "Cargando...",
+    noResults: 'No se encontraron profesionales para',
+    phone: "Teléfono",
+    job: "Cargo",
+    email: "Email",
+    company: "Empresa",
+    location: "Ubicación",
+    gender: "Género",
+    map: "Mapa",
+    notSpecified: "No especificado",
+    professional: "Profesional",
+    genders: {
+      male: "Masculino",
+      female: "Femenino",
+      nonbinary: "No binario",
+    } as Record<string, string>
+  },
+  en: {
+    title: "Compact Directory",
+    subtitle: "Manage your connections with an efficient and professional design.",
+    searchPlaceholder: "Search contacts...",
+    allGenders: "All genders",
+    allCountries: "All countries",
+    allJobs: "All jobs",
+    loading: "Loading...",
+    noResults: 'No professionals found for',
+    phone: "Phone",
+    job: "Job Title",
+    email: "Email",
+    company: "Company",
+    location: "Location",
+    gender: "Gender",
+    map: "Map",
+    notSpecified: "Not specified",
+    professional: "Professional",
+    genders: {
+      male: "Male",
+      female: "Female",
+      nonbinary: "Nonbinary"
+    } as Record<string, string>
+  }
+};
 
 function App() {
+  const [language, setLanguage] = useState<'es' | 'en'>('es');
+  const t = translations[language];
+
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedGender, setSelectedGender] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedJob, setSelectedJob] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     // Llamada a la API real
@@ -46,10 +101,19 @@ function App() {
     loadUsers();
   }, []);
 
+  const uniqueGenders = Array.from(new Set(users.map(u => u.gender).filter(Boolean)));
+  const uniqueCountries = Array.from(new Set(users.map(u => u.country).filter(Boolean)));
+  const uniqueJobs = Array.from(new Set(users.map(u => u.job).filter(Boolean))).sort();
+
   const filteredUsers = users.filter((user) => {
     const term = searchTerm.toLowerCase();
+    
+    const matchGender = selectedGender === '' || user.gender === selectedGender;
+    const matchCountry = selectedCountry === '' || user.country === selectedCountry;
+    const matchJob = selectedJob === '' || user.job === selectedJob;
+
     // Búsqueda general en todos los campos visibles relevantes
-    return (
+    const matchSearch = (
       user.full_name?.toLowerCase().includes(term) ||
       user.email?.toLowerCase().includes(term) ||
       user.phone?.toLowerCase().includes(term) ||
@@ -58,131 +122,135 @@ function App() {
       user.company?.toLowerCase().includes(term) ||
       user.job?.toLowerCase().includes(term)
     );
+
+    return matchGender && matchCountry && matchJob && matchSearch;
   });
+  const formatPhone = (phone: string) => {
+    if (!phone) return '';
+    // Quitamos la extensión si la hay
+    const mainPhone = phone.split(/x/i)[0].trim();
+    
+    // Extraemos solo los números
+    const digits = mainPhone.replace(/\D/g, '');
+
+    // Formato (XXX) XXX-XXXX para 10 dígitos
+    if (digits.length === 10) {
+      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+    }
+    
+    // Formato +1 (XXX) XXX-XXXX para 11 dígitos que empiecen en 1
+    if (digits.length === 11 && digits.startsWith('1')) {
+      return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+    }
+
+    // Si no coincide, retornamos el número limpio sin la extensión
+    return mainPhone;
+  };
+
+  const getAvatarUrl = (user: User) => {
+    // Solo bloqueamos servicios de "placeholders" que muestran texto/cajas grises.
+    if (!user.avatar || user.avatar.includes('placehold') || user.avatar.includes('dummyimage')) {
+      return "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%239CA3AF%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E";
+    }
+    return user.avatar;
+  };
+
+  const formatGender = (g?: string) => {
+    if (!g) return t.notSpecified;
+    return t.genders[g.toLowerCase()] || g;
+  };
 
   return (
     <div className="dashboard-layout">
-      {/* Overlay del Sidebar para móviles */}
-      {isMobileMenuOpen && (
-        <div className="sidebar-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>
-      )}
-
-      {/* Sidebar Izquierdo */}
-      <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
-        <div className="network-info">
-          <div className="network-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-          </div>
-          <h3>Network</h3>
-        </div>
-        <p className="network-subtitle">Directorio Verificado</p>
-
-        <button className="btn-new-contact">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-          Nuevo Contacto
-        </button>
-
-        <div className="sidebar-menu">
-          <div className="menu-item active">
-            <svg className="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-            Todos los contactos
-          </div>
-          <div className="menu-item">
-            <svg className="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
-            Favoritos
-          </div>
-          <div className="menu-item">
-            <svg className="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            Recientes
-          </div>
-          <div className="menu-item">
-            <svg className="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-            Equipos
-          </div>
-          <div className="menu-item">
-            <svg className="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-            Directorio
-          </div>
-        </div>
-      </aside>
-
       {/* Contenido Principal */}
       <div className="main-wrapper">
-        <nav className="top-navbar">
-          <div className="nav-left">
-            <button className="hamburger-btn" onClick={() => setIsMobileMenuOpen(true)}>
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-            </button>
-            <div className="logo">MyDirectory</div>
-            <div className="nav-links">
-              <span className="nav-link active">Directorio</span>
-              <span className="nav-link">Equipos</span>
-              <span className="nav-link">Recientes</span>
-            </div>
-          </div>
-          <div className="nav-right">
-            <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-            <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            <div className="nav-avatar"></div>
-          </div>
-        </nav>
 
         <main className="main-content">
           <div className="header-compact">
             <div className="header-compact-left">
-              <h1>Directorio Compacto</h1>
-              <p>Gestiona tus conexiones con un diseño eficiente y profesional.</p>
-            </div>
-            <div className="header-compact-right">
-              <span className="contact-count">{filteredUsers.length} Contactos</span>
-              <span className="active-badge">Ventas Activo</span>
+              <h1>{t.title}</h1>
+              <p>{t.subtitle}</p>
             </div>
           </div>
 
           <div className="search-container">
-            <svg className="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            <input
-              type="text"
-              placeholder="Buscar contactos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
+            <div className="search-filters-container">
+              <div className="search-input-wrapper">
+                <svg className="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <input
+                  type="text"
+                  placeholder={t.searchPlaceholder}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="search-input"
+                />
+              </div>
+              
+              <div className="filters-wrapper">
+                <select 
+                  className="filter-select"
+                  value={selectedGender}
+                  onChange={(e) => setSelectedGender(e.target.value)}
+                >
+                  <option value="">{t.allGenders}</option>
+                  {uniqueGenders.map(gender => (
+                    <option key={gender} value={gender}>{formatGender(gender)}</option>
+                  ))}
+                </select>
+
+                <select 
+                  className="filter-select"
+                  value={selectedCountry}
+                  onChange={(e) => setSelectedCountry(e.target.value)}
+                >
+                  <option value="">{t.allCountries}</option>
+                  {uniqueCountries.map(country => (
+                    <option key={country} value={country}>{country}</option>
+                  ))}
+                </select>
+
+                <select 
+                  className="filter-select"
+                  value={selectedJob}
+                  onChange={(e) => setSelectedJob(e.target.value)}
+                >
+                  <option value="">{t.allJobs}</option>
+                  {uniqueJobs.map(job => (
+                    <option key={job} value={job}>{job}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
 
           {loading ? (
             <div className="loader-container">
               <div className="spinner"></div>
-              <div className="loader-text">Cargando...</div>
+              <div className="loader-text">{t.loading}</div>
             </div>
           ) : (
             <div className="user-list">
               {filteredUsers.length === 0 ? (
-                <div className="no-results">No se encontraron profesionales para "{searchTerm}"</div>
+                <div className="no-results">{t.noResults} "{searchTerm}"</div>
               ) : (
                 filteredUsers.map((user) => {
-                  const statusColors = ['status-green', 'status-grey', 'status-orange'];
-                  const statusClass = statusColors[user.full_name.length % 3];
-
                   return (
                     <div key={user.id} className="user-card-horizontal" onClick={() => setSelectedUser(user)}>
-                      <div className={`status-dot-top-right ${statusClass}`}></div>
-                      
                       <div className="card-left">
                         <img
-                          src={user.avatar}
+                          src={getAvatarUrl(user)}
                           alt={`Foto de ${user.full_name}`}
                           className="avatar-compact"
                           onError={(e) => {
-                            e.currentTarget.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(user.full_name) + "&background=random";
+                            e.currentTarget.src = "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%239CA3AF%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E";
                           }}
                         />
                         <div className="user-info-compact">
                           <div className="name-row">
                             <h2>{user.full_name}</h2>
                           </div>
-                          <span className="job-compact">{user.job || 'Profesional'}</span>
-                          <span className="company-compact">{user.company || 'Empresa'}</span>
+                          <span className="job-compact">{user.job || t.professional}</span>
+                          <span className="company-compact">{user.company || t.company}</span>
                         </div>
                       </div>
 
@@ -212,12 +280,6 @@ function App() {
                   );
                 })
               )}
-              {filteredUsers.length > 0 && (
-                <button className="add-contact-btn">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-                  Agregar nuevo contacto
-                </button>
-              )}
             </div>
           )}
         </main>
@@ -226,57 +288,125 @@ function App() {
       {/* MODAL DEL CONTACTO */}
       {selectedUser && (
         <div className="modal-overlay" onClick={() => setSelectedUser(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setSelectedUser(null)}>
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-            <div className="modal-image-container">
-              <img 
-                src={selectedUser.avatar} 
-                alt={`Foto de ${selectedUser.full_name}`} 
-                className="modal-image"
-                onError={(e) => {
-                  e.currentTarget.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(selectedUser.full_name) + "&background=random";
-                }}
-              />
-              <div className="modal-badge">
-                <span className="modal-badge-dot"></span> Active
+          <div className="modal-content-wide" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <button className="modal-close-btn" onClick={() => setSelectedUser(null)}>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+              <div className="modal-avatar-wrapper">
+                <img
+                  src={getAvatarUrl(selectedUser)}
+                  alt={`Foto de ${selectedUser.full_name}`}
+                  className="modal-avatar-circle"
+                  onError={(e) => {
+                    e.currentTarget.src = "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%239CA3AF%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E";
+                  }}
+                />
               </div>
-              <div className="modal-floating-actions">
-                <button className="modal-btn-circle" onClick={() => window.location.href = `mailto:${selectedUser.email}`} title="Email">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                </button>
-                <button className="modal-btn-circle" onClick={() => window.location.href = `tel:${selectedUser.phone}`} title="Llamar">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                </button>
+              <div className="modal-title-area">
+                <h2>{selectedUser.full_name}</h2>
+                <div className="modal-subtitle">
+                  <span className="modal-job">{selectedUser.job || t.professional}</span>
+                  <span className="modal-dot-separator">•</span>
+                  <span className="modal-company">{selectedUser.company || t.notSpecified}</span>
+                </div>
+              </div>
+
+              <div className="modal-actions-centered">
+                <a href={`mailto:${selectedUser.email}`} className="action-icon" title="Email" onClick={(e) => e.stopPropagation()}>
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                </a>
+                <a href={`tel:${selectedUser.phone}`} className="action-icon" title="Teléfono" onClick={(e) => e.stopPropagation()}>
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                </a>
               </div>
             </div>
-            
-            <div className="modal-details">
-              <div className="detail-row">
-                <span className="detail-label detail-title">{selectedUser.full_name}</span>
-                <span className="detail-value">{selectedUser.city}, {selectedUser.country}</span>
+
+            <div className="modal-body">
+
+              <div className="modal-grid-details">
+                {/* Teléfono */}
+                <div className="modal-detail-item">
+                  <div className="modal-icon-bg">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                  </div>
+                  <div className="modal-detail-text">
+                    <span className="detail-label">{t.phone}</span>
+                    <span className="detail-value">{formatPhone(selectedUser.phone)}</span>
+                  </div>
+                </div>
+
+                {/* Cargo */}
+                <div className="modal-detail-item">
+                  <div className="modal-icon-bg">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                  </div>
+                  <div className="modal-detail-text">
+                    <span className="detail-label">{t.job}</span>
+                    <span className="detail-value">{selectedUser.job || t.notSpecified}</span>
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div className="modal-detail-item">
+                  <div className="modal-icon-bg">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                  </div>
+                  <div className="modal-detail-text">
+                    <span className="detail-label">{t.email}</span>
+                    <span className="detail-value">{selectedUser.email}</span>
+                  </div>
+                </div>
+
+                {/* Empresa */}
+                <div className="modal-detail-item">
+                  <div className="modal-icon-bg">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                  </div>
+                  <div className="modal-detail-text">
+                    <span className="detail-label">{t.company}</span>
+                    <span className="detail-value">{selectedUser.company || t.notSpecified}</span>
+                  </div>
+                </div>
+
+                {/* Ubicación */}
+                <div className="modal-detail-item">
+                  <div className="modal-icon-bg">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                  </div>
+                  <div className="modal-detail-text">
+                    <span className="detail-label">{t.location}</span>
+                    <span className="detail-value">{selectedUser.city ? `${selectedUser.city}, ` : ''}{selectedUser.country}</span>
+                  </div>
+                </div>
+
+                {/* Género */}
+                <div className="modal-detail-item">
+                  <div className="modal-icon-bg">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                  </div>
+                  <div className="modal-detail-text">
+                    <span className="detail-label">{t.gender}</span>
+                    <span className="detail-value" style={{textTransform: 'capitalize'}}>{formatGender(selectedUser.gender)}</span>
+                  </div>
+                </div>
               </div>
-              <div className="detail-row">
-                <span className="detail-label">Teléfono:</span>
-                <span className="detail-value">{selectedUser.phone}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Email:</span>
-                <span className="detail-value">{selectedUser.email}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Cargo:</span>
-                <span className="detail-value">{selectedUser.job || 'No especificado'}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Empresa:</span>
-                <span className="detail-value">{selectedUser.company || 'No especificada'}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Zona Horaria:</span>
-                <span className="detail-value">{selectedUser.timezone}</span>
-              </div>
+
+              {/* Mapa de Ubicación */}
+              {selectedUser.latitude && selectedUser.longitude && (
+                <div className="modal-map-container" style={{ marginTop: '1.5rem' }}>
+                  <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '0.8rem' }}>{t.map}</h3>
+                  <iframe
+                    title="Mapa de Ubicación"
+                    width="100%"
+                    height="200"
+                    style={{ border: 0, borderRadius: '12px' }}
+                    loading="lazy"
+                    allowFullScreen
+                    src={`https://maps.google.com/maps?q=${selectedUser.latitude},${selectedUser.longitude}&z=10&output=embed`}
+                  ></iframe>
+                </div>
+              )}
             </div>
           </div>
         </div>

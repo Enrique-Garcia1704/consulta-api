@@ -10,4 +10,7 @@ export interface User {
   city: string;
   timezone: string;
   url: string;
+  latitude?: number;
+  longitude?: number;
+  gender?: string;
 }
