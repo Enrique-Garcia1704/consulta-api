@@ -43,68 +43,79 @@ function App() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    // Llamada a la API real
-    const loadUsers = async () => {
-      try {
-        const response = await fetch('https://api.api-ninjas.com/v2/randomuser', {
-          headers: {
-            'X-Api-Key': import.meta.env.VITE_API_KEY
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Error al conectar con la API');
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('https://api.api-ninjas.com/v2/randomuser', {
+        headers: {
+          'X-Api-Key': import.meta.env.VITE_API_KEY
         }
+      });
 
-        const data = await response.json();
-
-        // Procesamos los datos reales provenientes de la API
-        if (Array.isArray(data)) {
-          setUsers(data as User[]);
-        } else if (data && data.error) {
-          console.error('Error de API:', data.error);
-          setUsers([]);
-        } else if (data) {
-          // Si la API devuelve solo un usuario (un objeto), lo metemos en un arreglo
-          setUsers([data as User]);
-        }
-      } catch (error) {
-        console.error("Error cargando usuarios:", error);
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error('Error al conectar con la API');
       }
-    };
 
+      const data = await response.json();
+
+      if (Array.isArray(data)) {
+        setUsers(data as User[]);
+      } else if (data && data.error) {
+        console.error('Error de API:', data.error);
+        setUsers([]);
+      } else if (data) {
+        setUsers([data as User]);
+      }
+    } catch (error) {
+      console.error("Error cargando usuarios:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadUsers();
   }, []);
 
-  const uniqueGenders = Array.from(new Set(users.map(u => u.gender).filter(Boolean)));
-  const uniqueCountries = Array.from(new Set(users.map(u => u.country).filter(Boolean)));
-  const uniqueJobs = Array.from(new Set(users.map(u => u.job).filter(Boolean))).sort();
+  const term = searchTerm.toLowerCase();
+
+  const matchSearchFn = (user: User) => (
+    user.full_name?.toLowerCase().includes(term) ||
+    user.email?.toLowerCase().includes(term) ||
+    user.phone?.toLowerCase().includes(term) ||
+    user.city?.toLowerCase().includes(term) ||
+    user.country?.toLowerCase().includes(term) ||
+    user.company?.toLowerCase().includes(term) ||
+    user.job?.toLowerCase().includes(term) ||
+    user.dob?.toLowerCase().includes(term) ||
+    user.cell?.toLowerCase().includes(term)
+  );
 
   const filteredUsers = users.filter((user) => {
-    const term = searchTerm.toLowerCase();
-
     const matchGender = selectedGender === '' || user.gender === selectedGender;
     const matchCountry = selectedCountry === '' || user.country === selectedCountry;
     const matchJob = selectedJob === '' || user.job === selectedJob;
-
-    // Búsqueda general en todos los campos visibles relevantes
-    const matchSearch = (
-      user.full_name?.toLowerCase().includes(term) ||
-      user.email?.toLowerCase().includes(term) ||
-      user.phone?.toLowerCase().includes(term) ||
-      user.city?.toLowerCase().includes(term) ||
-      user.country?.toLowerCase().includes(term) ||
-      user.company?.toLowerCase().includes(term) ||
-      user.job?.toLowerCase().includes(term) ||
-      user.dob?.toLowerCase().includes(term) ||
-      user.cell?.toLowerCase().includes(term)
-    );
-
-    return matchGender && matchCountry && matchJob && matchSearch;
+    return matchGender && matchCountry && matchJob && matchSearchFn(user);
   });
+
+  // Calcular opciones dinámicas para cada dropdown (aplicando todos los filtros EXCEPTO el suyo propio)
+  const uniqueGenders = Array.from(new Set(users.filter(u => 
+    (selectedCountry === '' || u.country === selectedCountry) && 
+    (selectedJob === '' || u.job === selectedJob) && 
+    matchSearchFn(u)
+  ).map(u => u.gender).filter(Boolean)));
+
+  const uniqueCountries = Array.from(new Set(users.filter(u => 
+    (selectedGender === '' || u.gender === selectedGender) && 
+    (selectedJob === '' || u.job === selectedJob) && 
+    matchSearchFn(u)
+  ).map(u => u.country).filter(Boolean))).sort();
+
+  const uniqueJobs = Array.from(new Set(users.filter(u => 
+    (selectedGender === '' || u.gender === selectedGender) && 
+    (selectedCountry === '' || u.country === selectedCountry) && 
+    matchSearchFn(u)
+  ).map(u => u.job).filter(Boolean))).sort();
   const formatPhone = (phone: string) => {
     if (!phone) return '';
     // Quitamos la extensión si la hay
@@ -171,6 +182,15 @@ function App() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
                   </svg>
                 </button>
+                <button 
+                  className="refresh-btn mobile-only-refresh" 
+                  title="refrescar con nuevos empleados"
+                  onClick={loadUsers}
+                >
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                </button>
               </div>
 
               <div className={`filters-wrapper ${showFilters ? 'show' : ''}`}>
@@ -206,6 +226,16 @@ function App() {
                     <option key={job} value={job}>{job}</option>
                   ))}
                 </select>
+
+                <button 
+                  className="refresh-btn desktop-only-refresh" 
+                  title="refrescar con nuevos empleados"
+                  onClick={loadUsers}
+                >
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
